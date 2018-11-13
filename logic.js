@@ -1,136 +1,114 @@
-// Function to determine marker size based on population
-function markerSize(population) {
-  return population / 40;
-}
+// Store our API endpoint inside queryUrl
+var queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 
-// An array containing all of the information needed to create city and state markers
-var locations = [
-  {
-    coordinates: [40.7128, -74.0059],
-    state: {
-      name: "New York State",
-      population: 19795791
-    },
-    city: {
-      name: "New York",
-      population: 8550405
-    }
-  },
-  {
-    coordinates: [34.0522, -118.2437],
-    state: {
-      name: "California",
-      population: 39250017
-    },
-    city: {
-      name: "Lost Angeles",
-      population: 3971883
-    }
-  },
-  {
-    coordinates: [41.8781, -87.6298],
-    state: {
-      name: "Michigan",
-      population: 9928300
-    },
-    city: {
-      name: "Chicago",
-      population: 2720546
-    }
-  },
-  {
-    coordinates: [29.7604, -95.3698],
-    state: {
-      name: "Texas",
-      population: 26960000
-    },
-    city: {
-      name: "Houston",
-      population: 2296224
-    }
-  },
-  {
-    coordinates: [41.2524, -95.9980],
-    state: {
-      name: "Nebraska",
-      population: 1882000
-    },
-    city: {
-      name: "Omaha",
-      population: 446599
-    }
+// Perform a GET request to the query URL
+d3.json(queryUrl, function(data) {
+  // Once we get a response, send the data.features object to the createFeatures function
+  createFeatures(data.features);
+});
+
+
+var markers = [];
+
+function markerColor(mag) {
+  if (mag > 0 && mag < 1) {
+    return 'white'
   }
-];
 
-// Define arrays to hold created city and state markers
-var cityMarkers = [];
-var stateMarkers = [];
+  if (mag > 1 && mag < 2) {
+    return 'green'
+  }
 
-// Loop through locations and create city and state markers
-for (var i = 0; i < locations.length; i++) {
-  // Setting the marker radius for the state by passing population into the markerSize function
-  stateMarkers.push(
-    L.circle(locations[i].coordinates, {
-      stroke: false,
-      fillOpacity: 0.75,
-      color: "white",
-      fillColor: "white",
-      radius: markerSize(locations[i].state.population)
-    })
-  );
+  if (mag > 2 && mag < 3) {
+    return 'yellow';
+  }
 
-  // Setting the marker radius for the city by passing population into the markerSize function
-  cityMarkers.push(
-    L.circle(locations[i].coordinates, {
-      stroke: false,
-      fillOpacity: 0.75,
-      color: "purple",
-      fillColor: "purple",
-      radius: markerSize(locations[i].city.population)
-    })
-  );
+  if (mag > 3 && mag < 4) {
+    return 'orange';
+  }
+
+  if (mag > 4 && mag < 5) {
+    return 'red';
+  }
+
+  if (mag > 5) {
+    return 'black';
+  }
+ return 'black';
+} 
+
+function createFeatures(earthquakeData) {
+
+  // Define a function we want to run once for each feature in the features array
+  // Give each feature a popup describing the place and time of the earthquake
+  function onEachFeature(feature) {
+    // create circles base on magnitude
+     var coords = feature.geometry.coordinates;
+     var latLng = L.latLng({lat:coords[1] ,lon:coords[0]});
+      markers.push(   
+        L.circleMarker(latLng, {
+        stroke: true,
+        fillOpacity: 0.55,
+        color: "black",
+        fillColor: markerColor(feature.properties.mag),
+        radius: feature.properties.mag * 2.5
+      }).bindPopup("<h3>" + feature.properties.place +
+      "</h3><hr><p>" + new Date(feature.properties.time) + "</p>"));
+  }
+
+  // Create a GeoJSON layer containing the features array on the earthquakeData object
+  // Run the onEachFeature function once for each piece of data in the array
+  var earthquakes = L.geoJSON(earthquakeData, {
+    onEachFeature: onEachFeature
+  });
+
+
+  createMap(earthquakes);
 }
 
-// Define variables for our base layers
-var streetmap = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
-  attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
-  maxZoom: 18,
-  id: "mapbox.streets",
-  accessToken: API_KEY
-});
+function createMap(earthquakes) {
 
-var darkmap = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
-  attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
-  maxZoom: 18,
-  id: "mapbox.dark",
-  accessToken: API_KEY
-});
+  // Define streetmap and darkmap layers
+  var streetmap = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
+    attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+    maxZoom: 18,
+    id: "mapbox.streets",
+    accessToken: API_KEY
+  });
 
-// Create two separate layer groups: one for cities and one for states
-var states = L.layerGroup(stateMarkers);
-var cities = L.layerGroup(cityMarkers);
+  var darkmap = L.tileLayer("https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}", {
+    attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+    maxZoom: 18,
+    id: "mapbox.dark",
+    accessToken: API_KEY
+  });
 
-// Create a baseMaps object
-var baseMaps = {
-  "Street Map": streetmap,
-  "Dark Map": darkmap
-};
+  // Define a baseMaps object to hold our base layers
+  var baseMaps = {
+    "Street Map": streetmap,
+    "Dark Map": darkmap
+  };
 
-// Create an overlay object
-var overlayMaps = {
-  "State Population": states,
-  "City Population": cities
-};
+  var markerLayer = L.layerGroup(markers);
 
-// Define a map object
-var myMap = L.map("map", {
-  center: [37.09, -95.71],
-  zoom: 5,
-  layers: [streetmap, states, cities]
-});
+  // Create overlay object to hold our overlay layer
+  var overlayMaps = {
+    Earthquakes: markerLayer
+  };
 
-// Pass our map layers into our layer control
-// Add the layer control to the map
-L.control.layers(baseMaps, overlayMaps, {
-  collapsed: false
-}).addTo(myMap);
+  // Create our map, giving it the streetmap and earthquakes layers to display on load
+  var myMap = L.map("map", {
+    center: [
+      37.09, -95.71
+    ],
+    zoom: 5,
+    layers: [streetmap, markerLayer]
+  });
+
+  // Create a layer control
+  // Pass in our baseMaps and overlayMaps
+  // Add the layer control to the map
+  L.control.layers(baseMaps, overlayMaps, {
+    collapsed: false
+  }).addTo(myMap);
+}
