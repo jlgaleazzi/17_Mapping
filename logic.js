@@ -104,11 +104,27 @@ function createMap(earthquakes) {
     zoom: 5,
     layers: [streetmap, markerLayer]
   });
+ 
+  var legend = L.control({position: 'bottomright'});
 
+  legend.onAdd = function(map) {
+    var div = L.DomUtil.create('div', 'info legend'),
+    magnitudes = [0,1,2,3,4,5],
+    labels = [];
+    for (var i=0; i<magnitudes.length; i++) {
+      div.innerHTML += 
+      '<i style="background:' + markerColor(magnitudes[i]+1) + '"></i>' + 
+      magnitudes[i] + (magnitudes[i+1] ? '&ndash;' + magnitudes[i+1] + '<br>': '+');
+    }
+    return div;
+  }
+
+  
   // Create a layer control
   // Pass in our baseMaps and overlayMaps
   // Add the layer control to the map
   L.control.layers(baseMaps, overlayMaps, {
     collapsed: false
   }).addTo(myMap);
+  legend.addTo(myMap);
 }
