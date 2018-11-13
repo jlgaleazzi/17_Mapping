@@ -11,30 +11,12 @@ d3.json(queryUrl, function(data) {
 var markers = [];
 
 function markerColor(mag) {
-  if (mag > 0 && mag < 1) {
-    return 'white'
-  }
-
-  if (mag > 1 && mag < 2) {
-    return 'green'
-  }
-
-  if (mag > 2 && mag < 3) {
-    return 'yellow';
-  }
-
-  if (mag > 3 && mag < 4) {
-    return 'orange';
-  }
-
-  if (mag > 4 && mag < 5) {
-    return 'red';
-  }
-
-  if (mag > 5) {
-    return 'black';
-  }
- return 'black';
+  return  mag > 5 ? '#581845' :
+          mag > 4 ? '#900C3F' :
+          mag > 3 ? '#C70039' :
+          mag > 2 ? '#FF4733' :
+          mag > 1 ? '#FFC300' :
+                    '#DAF7A6';
 } 
 
 function createFeatures(earthquakeData) {
@@ -52,8 +34,8 @@ function createFeatures(earthquakeData) {
         color: "black",
         fillColor: markerColor(feature.properties.mag),
         radius: feature.properties.mag * 2.5
-      }).bindPopup("<h3>" + feature.properties.place +
-      "</h3><hr><p>" + new Date(feature.properties.time) + "</p>"));
+      }).bindPopup('<h3> Magnitude ' + feature.properties.mag + ' Earthquake <br>' + feature.properties.place + 
+      '</h3><hr><p>' + new Date(feature.properties.time) + '</p>'));
   }
 
   // Create a GeoJSON layer containing the features array on the earthquakeData object
